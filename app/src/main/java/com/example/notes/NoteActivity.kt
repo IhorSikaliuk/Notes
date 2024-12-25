@@ -2,6 +2,7 @@ package com.example.notes
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.Html
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,7 +22,15 @@ import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.ui.Alignment
-
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Element
+import org.jsoup.nodes.TextNode
 
 class NoteActivity : ComponentActivity() {
 
@@ -202,6 +211,7 @@ fun NoteScreen(
                                 Record(
                                     content = currentRecordText.text,
                                     type = if (isCheckboxMode) "checkbox" else "text",
+                                    isChecked = if (isCheckboxMode) false else null
 
                                 )
                             )
@@ -220,6 +230,21 @@ fun NoteScreen(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(if (isCheckboxMode) "Switch to Text" else "Switch to Checkbox")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Поле введення тексту зі стилізацією
+            Row {
+                Button(onClick = { currentRecordText = applyStyle(currentRecordText, "<b>") }) {
+                    Text("Bold")
+                }
+                Button(onClick = { currentRecordText = applyStyle(currentRecordText, "<i>") }) {
+                    Text("Italic")
+                }
+                Button(onClick = { currentRecordText = applyStyle(currentRecordText, "<u>") }) {
+                    Text("Underline")
                 }
             }
 
@@ -250,8 +275,6 @@ fun NoteScreen(
             records.forEach { record ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (record.type == "checkbox") {
-                        if (record.isChecked == null)
-                            record.isChecked = false;
                         record.isChecked?.let { isChecked ->
                             val isCheckedState = remember { mutableStateOf(record.isChecked ?: false) }
                             Checkbox(
@@ -264,11 +287,60 @@ fun NoteScreen(
                         }
                     }
                     Text(
-                        text = record.content,
+                        text = parseHtmlToAnnotatedString(record.content),
                         style = MaterialTheme.typography.body1
                     )
                 }
             }
         }
     }
+}
+
+fun parseHtmlToAnnotatedString(html: String): AnnotatedString {
+    val builder = AnnotatedString.Builder()
+    val document = Jsoup.parse(html)
+
+    fun applyStyles(element: Element, parentStyles: List<SpanStyle>) {
+        val currentStyles = parentStyles.toMutableList()
+        when (element.tagName()) {
+            "b", "strong" -> currentStyles.add(SpanStyle(fontWeight = FontWeight.Bold))
+            "i", "em" -> currentStyles.add(SpanStyle(fontStyle = FontStyle.Italic))
+            "u" -> currentStyles.add(SpanStyle(textDecoration = TextDecoration.Underline))
+        }
+
+        element.childNodes().forEach { child ->
+            when (child) {
+                is TextNode -> builder.withStyle(currentStyles.reduceOrNull { acc, style ->
+                    acc.merge(style)
+                } ?: SpanStyle()) {
+                    append(child.text())
+                }
+
+                is Element -> applyStyles(child, currentStyles)
+            }
+        }
+    }
+
+    document.body().childNodes().forEach { node ->
+        when (node) {
+            is TextNode -> builder.append(node.text())
+            is Element -> applyStyles(node, emptyList())
+        }
+    }
+
+    return builder.toAnnotatedString()
+}
+
+fun applyStyle(text: TextFieldValue, style: String): TextFieldValue {
+    val startTag = style
+    val endTag = style.replace("<", "</")
+    val selectedText = text.text.substring(text.selection.start, text.selection.end)
+    val styledText = "$startTag$selectedText$endTag"
+    return text.copy(
+        text = text.text.replaceRange(
+            text.selection.start,
+            text.selection.end,
+            styledText
+        )
+    )
 }
