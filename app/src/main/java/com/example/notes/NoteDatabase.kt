@@ -153,7 +153,7 @@ class NoteDatabase(private val firestore: FirebaseFirestore) {
                 isChecked = document.getBoolean("is_checked"),
                 order = document.getLong("order")?.toInt() ?: 0
             )
-        }
+        }.sortedBy { it.order }
     }
 
     fun updateRecord(
