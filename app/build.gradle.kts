@@ -89,5 +89,6 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:21.2.0")
     implementation("com.google.firebase:firebase-firestore")
 
-    implementation ("io.supabase:supabase-kt:0.9.0")
+
+
 }
