@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.ui.Alignment
 
 
 class NoteActivity : ComponentActivity() {
@@ -247,10 +248,26 @@ fun NoteScreen(
 
             Text("Records:", style = MaterialTheme.typography.h6)
             records.forEach { record ->
-                Text(
-                    text = if (record.type == "checkbox") "[ ] ${record.content}" else record.content,
-                    style = MaterialTheme.typography.body1
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (record.type == "checkbox") {
+                        if (record.isChecked == null)
+                            record.isChecked = false;
+                        record.isChecked?.let { isChecked ->
+                            val isCheckedState = remember { mutableStateOf(record.isChecked ?: false) }
+                            Checkbox(
+                                checked = isCheckedState.value,
+                                onCheckedChange = { isCheckedNew ->
+                                    isCheckedState.value = isCheckedNew
+                                    record.isChecked = isCheckedNew
+                                }
+                            )
+                        }
+                    }
+                    Text(
+                        text = record.content,
+                        style = MaterialTheme.typography.body1
+                    )
+                }
             }
         }
     }

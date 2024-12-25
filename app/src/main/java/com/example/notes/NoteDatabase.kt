@@ -106,7 +106,7 @@ class NoteDatabase(private val firestore: FirebaseFirestore) {
                             val recordData = mapOf(
                                 "content" to record.content,
                                 "type" to record.type,
-                                "is_checked" to (if (record.type == "checkbox") false else null),
+                                "is_checked" to (if (record.type == "checkbox") record.isChecked else null),
                                 "order" to index
                             )
                             noteRef.collection("records").add(recordData)

@@ -14,6 +14,6 @@ data class Note(
 data class Record(
     val type: String = "text", // "text" or "checkbox"
     val content: String = "",
-    val isChecked: Boolean? = null,
+    var isChecked: Boolean? = null,
     val order: Int = 0,
 )
